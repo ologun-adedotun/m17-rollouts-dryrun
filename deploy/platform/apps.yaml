@@ -37,15 +37,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{.path.basename}}'
-      # During a canary the Rollout owns the route's weights and its header rule.
-      ignoreDifferences:
-        - group: gateway.networking.k8s.io
-          kind: HTTPRoute
-          jsonPointers:
-            - /spec/rules
       syncPolicy:
-        syncOptions:
-          - RespectIgnoreDifferences=true
         automated:
           prune: true
           selfHeal: true
