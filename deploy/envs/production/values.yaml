@@ -3,7 +3,7 @@ image:
   tag: v2.2.0
   pullPolicy: IfNotPresent
 
-workload: rollout
+workload: deployment
 
 config:
   APP_NAME: maright-app
