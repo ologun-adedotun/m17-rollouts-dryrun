@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/ologun-adedotun/m17-rollouts-dryrun/maright-app
-  tag: v2.2.1
+  tag: v2.2.3
   pullPolicy: IfNotPresent
 
 workload: rollout
