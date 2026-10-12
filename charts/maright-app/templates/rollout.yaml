@@ -49,6 +49,8 @@ spec:
           argoproj-labs/gatewayAPI:
             httpRoute: {{ $name }}
             namespace: {{ .Release.Namespace }}
+            # Without this the plugin accepts setHeaderRoute steps and does nothing.
+            useHeaderRoutes: true
       analysis:
         startingStep: 2
         templates:
