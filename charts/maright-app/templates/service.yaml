@@ -12,7 +12,7 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: http
-{{- if eq .Values.workload "rollout" }}
+{{- if ne .Values.workload "deployment" }}
 ---
 # The Rollout points this Service at its new pods: canary, or blue-green's preview.
 apiVersion: v1

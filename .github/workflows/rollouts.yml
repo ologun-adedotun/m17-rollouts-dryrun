@@ -1,6 +1,9 @@
 name: Rollouts experiments
 on:
   workflow_dispatch:
+    inputs:
+      script:
+        default: rollouts.sh
 
 permissions:
   contents: write
@@ -26,10 +29,14 @@ jobs:
           helm template bg charts/maright-app -f deploy/envs/staging/values.yaml --set workload=rollout --set rollout.strategy=blueGreen --set route.enabled=false | grep -c '^kind:'
           sed -n '/kind: AnalysisTemplate/,/^---/p' /tmp/staging-rollout.yaml | head -n 30
           sed -n '/kind: HTTPRoute/,/^---/p' /tmp/staging-rollout.yaml
+          for r in default narrow; do
+            if [ $r = default ]; then o=''; else o='--set providerRBAC.providers.istio=false --set providerRBAC.providers.smi=false --set providerRBAC.providers.ambassador=false --set providerRBAC.providers.awsLoadBalancerController=false --set providerRBAC.providers.awsAppMesh=false --set providerRBAC.providers.traefik=false --set providerRBAC.providers.apisix=false --set providerRBAC.providers.contour=false --set providerRBAC.providers.glooPlatform=false'; fi
+            echo "ClusterRole API groups, $r: $(helm template ar argo-rollouts --repo https://argoproj.github.io/argo-helm --version 2.43.6 $o | python3 -c 'import sys,yaml; g=set(); [g.update(x for r in (d.get("rules") or []) for x in r.get("apiGroups",[])) for d in yaml.safe_load_all(sys.stdin) if d and d.get("kind")=="ClusterRole" and d["metadata"]["name"]=="ar-argo-rollouts"]; print(len(g), sorted(g))')"
+          done
       - uses: helm/kind-action@v1
       - name: Tools and images
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash ci/prepare.sh
       - name: Experiments
-        run: bash ci/rollouts.sh
+        run: bash "ci/${{ inputs.script }}"

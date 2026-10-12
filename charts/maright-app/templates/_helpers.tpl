@@ -83,5 +83,5 @@ spec:
 {{- end -}}
 
 {{- define "maright-app.isCanary" -}}
-{{- if and (eq .Values.workload "rollout") (eq .Values.rollout.strategy "canary") }}true{{ end -}}
+{{- if and (ne .Values.workload "deployment") (eq .Values.rollout.strategy "canary") }}true{{ end -}}
 {{- end -}}

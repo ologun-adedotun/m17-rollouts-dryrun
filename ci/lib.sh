@@ -60,7 +60,7 @@ ver() { curl -s -m 5 -H "Host: $1" ${2:+-H "$2"} http://127.0.0.1:8081/ | python
 try: print(json.load(sys.stdin).get("version","?"))
 except Exception: print("error")'; }
 sample() { # sample HOST N -> counts of versions seen
-  local i; for i in $(seq "$2"); do ver "$1"; done | sort | uniq -c | tr '\n' ' '; echo; }
+  local i; for i in $(seq "$2"); do ver "$1" "${3:-}"; done | sort | uniq -c | tr '\n' ' '; echo; }
 k6start() { # k6start NAME HOST RATE DURATION
   kubectl delete job "$1" -n load --ignore-not-found --wait=true >/dev/null 2>&1
   kubectl create job "$1" -n load --image="$K6" -- k6 run -q -e TARGET="http://$(gwsvc).envoy-gateway-system.svc.cluster.local/" -e HOST="$2" -e RATE="$3" -e DURATION="$4" /scripts/load.js >/dev/null
@@ -70,7 +70,7 @@ k6wait() {
   echo "$1: $(kubectl logs -n load "job/$1" | grep RESULT)"
 }
 weights() { kubectl get httproute mission -n "$1" -o jsonpath='{range .spec.rules[*]}[{range .backendRefs[*]}{.name}={.weight} {end}{range .matches[*].headers[*]}{.name}:{.value}{end}] {end}' 2>/dev/null; }
-ro() { kubectl get rollout mission -n "$1" -o jsonpath='{.status.phase} step={.status.currentStepIndex} {.status.message}' 2>/dev/null; }
+ro() { kubectl get rollout "${RO:-mission}" -n "$1" -o jsonpath='{.status.phase} step={.status.currentStepIndex} {.status.message}' 2>/dev/null; }
 # watchro NS SECONDS STOP-REGEX: print each change of rollout phase/step/weights/analysis runs
 watchro() {
   local ns=$1 to=$2 stop=$3 t0 prev="" cur

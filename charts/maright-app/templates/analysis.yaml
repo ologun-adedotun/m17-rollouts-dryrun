@@ -1,4 +1,4 @@
-{{- if eq .Values.workload "rollout" }}
+{{- if ne .Values.workload "deployment" }}
 {{- $name := include "maright-app.fullname" . }}
 {{- $sel := printf "namespace=\"%s\",app_kubernetes_io_instance=\"%s\",rollouts_pod_template_hash=\"{{args.canary-hash}}\",path=\"/\"" .Release.Namespace .Release.Name }}
 apiVersion: argoproj.io/v1alpha1
