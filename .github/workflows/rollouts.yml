@@ -1,0 +1,35 @@
+name: Rollouts experiments
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  rollouts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.3.0
+      - name: Render every chart mode
+        run: |
+          set -e
+          helm lint charts/maright-app
+          for e in staging production; do for m in deployment migrate rollout; do
+            helm template mission charts/maright-app -n $e -f deploy/envs/$e/values.yaml --set workload=$m > /tmp/$e-$m.yaml
+            echo "$e $m: $(grep -c '^kind:' /tmp/$e-$m.yaml) objects: $(grep '^kind:' /tmp/$e-$m.yaml | sort | uniq -c | tr -s ' ' | tr '\n' ' ')"
+          done; done
+          helm template bg charts/maright-app -f deploy/envs/staging/values.yaml --set workload=rollout --set rollout.strategy=blueGreen --set route.enabled=false | grep -c '^kind:'
+          sed -n '/kind: AnalysisTemplate/,/^---/p' /tmp/staging-rollout.yaml | head -n 30
+          sed -n '/kind: HTTPRoute/,/^---/p' /tmp/staging-rollout.yaml
+      - uses: helm/kind-action@v1
+      - name: Tools and images
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash ci/prepare.sh
+      - name: Experiments
+        run: bash ci/rollouts.sh

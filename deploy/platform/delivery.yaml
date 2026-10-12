@@ -1,0 +1,94 @@
+# Wave -3: progressive delivery and the metrics that judge it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-rollouts
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-rollouts
+    targetRevision: 2.43.6
+    helm:
+      releaseName: argo-rollouts
+      valuesObject:
+        controller:
+          replicas: 1
+          image:
+            # The chart ships v1.10.0; v1.10.1 fixes CVE-2026-82277.
+            tag: v1.10.1
+          trafficRouterPlugins:
+            - name: argoproj-labs/gatewayAPI
+              location: https://github.com/argoproj-labs/rollouts-plugin-trafficrouter-gatewayapi/releases/download/v0.17.0/gatewayapi-plugin-linux-amd64
+              sha256: 1904ca787d33107c140521899d61fff030ee75d99908bd175fca5a4647759061
+        dashboard:
+          enabled: false
+        # Permissions only for the traffic provider we use.
+        providerRBAC:
+          enabled: true
+          providers:
+            istio: false
+            smi: false
+            ambassador: false
+            awsLoadBalancerController: false
+            awsAppMesh: false
+            traefik: false
+            apisix: false
+            contour: false
+            glooPlatform: false
+            gatewayAPI: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo-rollouts
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus
+    targetRevision: 29.36.1
+    helm:
+      releaseName: prometheus
+      valuesObject:
+        alertmanager:
+          enabled: false
+        kube-state-metrics:
+          enabled: false
+        prometheus-node-exporter:
+          enabled: false
+        prometheus-pushgateway:
+          enabled: false
+        server:
+          retention: 1d
+          persistentVolume:
+            enabled: false
+          global:
+            scrape_interval: 10s
+            evaluation_interval: 10s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
